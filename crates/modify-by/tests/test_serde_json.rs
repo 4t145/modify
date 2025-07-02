@@ -1,4 +1,4 @@
-use modify::{Fn, Merge, Modification, ModificationExt, extend, set};
+use modify::{Fn, Modification, ModificationExt, extend, set};
 use serde_json::Value;
 #[test]
 fn test_extend_array() {
@@ -34,13 +34,12 @@ pub fn extend_object(object: Value) -> impl Modification<Value> {
     ().filter(Value::is_null, set(serde_json::json!({})))
         .filter_map(
             Value::as_object_mut,
-            Fn(|x: &mut serde_json::Map<String, Value>| match object {
-                Value::Object(obj) => {
+            Fn(|x: &mut serde_json::Map<String, Value>| {
+                if let Value::Object(obj) = object {
                     for (k, v) in obj {
                         x.insert(k, v);
                     }
                 }
-                _ => {}
             }),
         )
 }
