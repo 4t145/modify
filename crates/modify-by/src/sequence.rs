@@ -4,7 +4,7 @@ use crate::Modification;
 pub struct Sequence<I>(pub I);
 
 impl<I> Sequence<I> {
-    pub fn from_iter<T: IntoIterator<IntoIter = I>>(iter: T) -> Self {
+    pub fn new<T: IntoIterator<IntoIter = I>>(iter: T) -> Self {
         Sequence(iter.into_iter())
     }
 }
@@ -26,7 +26,7 @@ where
     M: Modification<T>,
 {
     fn modify(self, value: &mut T) {
-        Sequence::from_iter(self).modify(value);
+        Sequence::new(self).modify(value);
     }
 }
 
@@ -35,6 +35,6 @@ where
     M: Modification<T>,
 {
     fn modify(self, value: &mut T) {
-        Sequence::from_iter(self).modify(value);
+        Sequence::new(self).modify(value);
     }
 }
