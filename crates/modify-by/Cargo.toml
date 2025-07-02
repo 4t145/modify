@@ -1,0 +1,19 @@
+[package]
+name = "modify-by"
+edition.workspace = true
+version.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+description.workspace = true
+homepage.workspace = true
+categories.workspace = true
+readme.workspace = true
+
+[lib]
+name = "modify"
+
+[dependencies]
+
+[dev-dependencies]
+serde_json = { version = "1" }

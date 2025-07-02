@@ -1,15 +1,14 @@
-[package]
-name = "modify-by"
-version = "0.1.0"
+[workspace]
+members = ["crates/*"]
+resolver = "3"
+
+[workspace.package]
 edition = "2024"
-
-[dependencies]
-# merge = "0.2.0"
-serde = { version = "1", optional = true }
-
-
-[dev-dependencies]
-serde_json = { version = "1" }
-
-[features]
-serde = ["dep:serde"]
+version = "0.1.0"
+authors = ["4t145 <u4t145@163.com>"]
+license = "MIT/Apache-2.0"
+repository = "https://github.com/4t145/modify-by/"
+description = "Modify your data with trait."
+homepage = "https://github.com/4t145/modify-by/"
+categories = []
+readme = "README.md"

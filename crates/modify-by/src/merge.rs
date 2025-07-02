@@ -12,3 +12,7 @@ impl<T: Mergeable> Modification<T> for Merge<T> {
         value.merge(self.0);
     }
 }
+
+pub fn merge<M: Mergeable>(value: M) -> Merge<M> {
+    Merge(value)
+}
