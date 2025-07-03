@@ -1,4 +1,4 @@
-use modify::{Indexed, ModificationLayerExt};
+use modify::{Index, ModificationLayerExt};
 
 #[test]
 fn test_layers() {

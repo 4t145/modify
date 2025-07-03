@@ -1,9 +1,9 @@
-use crate::Modification;
+use crate::{Modification, ModificationLayer};
 
 #[derive(Debug, Clone)]
-pub struct Extend<E>(pub E);
+pub struct ExtendModification<E>(pub E);
 
-impl<T, E> Modification<T> for Extend<E>
+impl<T, E> Modification<T> for ExtendModification<E>
 where
     E: IntoIterator,
     T: ?Sized + std::iter::Extend<E::Item>,
@@ -13,6 +13,16 @@ where
     }
 }
 
-pub fn extend<E>(iter: E) -> Extend<E> {
-    Extend(iter)
+pub fn extend<E>(e: E) -> ExtendModification<E> {
+    ExtendModification(e)
+}
+
+pub struct Extend;
+
+impl<Inner> ModificationLayer<Inner> for Extend {
+    type Modification = ExtendModification<Inner>;
+
+    fn layer(self, inner: Inner) -> Self::Modification {
+        ExtendModification(inner)
+    }
 }

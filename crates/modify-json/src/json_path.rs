@@ -32,9 +32,7 @@ where
     M: Modification<serde_json::Value>,
 {
     fn modify(self, value: &mut serde_json::Value) {
-        value.reference_mut(self.path).map(|v| {
-            self.modify.modify(v);
-        });
+        if let Some(v) = value.reference_mut(self.path) { self.modify.modify(v); }
     }
 }
 
@@ -46,9 +44,10 @@ impl<M> ModificationLayer<M> for OnJsonPath {
     }
 }
 
-fn on_json_path<P: Into<QueryPath>>(path: P) -> OnJsonPath {
+pub fn on_json_path<P: Into<QueryPath>>(path: P) -> OnJsonPath {
     OnJsonPath::new(path)
 }
+
 
 #[test]
 fn test() {
@@ -60,7 +59,7 @@ fn test() {
     });
     json.reference("$.items[0].value").unwrap();
     on_json_path("$.items[0].value")
-        .apply_set(json!(10.5))
+        .set(json!(10.5))
         .modify(&mut json);
     assert_eq!(
         json,

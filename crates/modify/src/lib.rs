@@ -17,6 +17,8 @@ mod conditional;
 pub use conditional::*;
 mod map;
 pub use map::*;
+mod step;
+pub use step::*;
 mod macros;
 
 pub trait ModificationLayer<M> {
@@ -24,7 +26,7 @@ pub trait ModificationLayer<M> {
     fn layer(self, inner: M) -> Self::Modification;
 }
 
-pub trait ModificationLayerExt<M>: ModificationLayer<M> {
+pub trait ModificationLayerExt {
     fn then<Next>(self, next: Next) -> ThenLayer<Self, Next>
     where
         Self: Sized,
@@ -34,15 +36,15 @@ pub trait ModificationLayerExt<M>: ModificationLayer<M> {
             second: next,
         }
     }
-    fn apply(self, modification: M) -> Self::Modification
+    fn apply<M>(self, modification: M) -> Self::Modification
     where
-        Self: Sized,
+        Self: Sized + ModificationLayer<M>,
     {
         self.layer(modification)
     }
 }
 pub trait ApplyFn<F>: ModificationLayer<Call<F>> {
-    fn apply_fn(self, function: F) -> Self::Modification
+    fn call(self, function: F) -> Self::Modification
     where
         Self: Sized,
     {
@@ -51,14 +53,14 @@ pub trait ApplyFn<F>: ModificationLayer<Call<F>> {
 }
 
 pub trait ApplySet<T>: ModificationLayer<Set<T>> {
-    fn apply_set(self, value: T) -> Self::Modification
+    fn set(self, value: T) -> Self::Modification
     where
         Self: Sized,
     {
         self.layer(Set(value))
     }
 }
-impl<T, M> ModificationLayerExt<M> for T where T: ModificationLayer<M> {}
+impl<T> ModificationLayerExt for T {}
 impl<T, F> ApplyFn<F> for T where T: ModificationLayer<Call<F>> {}
 impl<T, V> ApplySet<V> for T where T: ModificationLayer<Set<V>> {}
 
@@ -91,54 +93,54 @@ pub trait ModificationExt<T: ?Sized>: Modification<T> {
     {
         layer.layer(self)
     }
-    fn then<M2: Modification<T>>(self, then: M2) -> ThenModification<Self, M2>
+    fn and_then<M2: Modification<T>>(self, then: M2) -> StepModification<Self, M2>
     where
         Self: Sized,
     {
         self.layer(Then(then))
     }
-    fn on_index<I>(self, index: I) -> IndexedModification<I, Self>
-    where
-        Self: Sized,
-    {
-        IndexedModification {
-            index,
-            modification: self,
-        }
-    }
-    fn filter<C, M>(self, condition: C, modification: M) -> ThenModification<Self, Filter<C, M>>
-    where
-        C: FnOnce(&T) -> bool,
-        M: Modification<T>,
-        Self: Sized,
-    {
-        self.then(Filter {
-            condition,
-            modification,
-        })
-    }
-    fn map<F, M, U>(self, map: F, modification: M) -> ThenModification<Self, Map<F, M>>
-    where
-        F: FnOnce(&mut T) -> &mut U,
-        M: Modification<U>,
-        U: ?Sized,
-        Self: Sized,
-    {
-        self.then(Map::new(map, modification))
-    }
-    fn filter_map<C, M, U>(
-        self,
-        filter_map: C,
-        modification: M,
-    ) -> ThenModification<Self, FilterMap<C, M>>
-    where
-        C: FnOnce(&mut T) -> Option<&mut U>,
-        M: Modification<U>,
-        U: ?Sized,
-        Self: Sized,
-    {
-        self.then(FilterMap::new(filter_map, modification))
-    }
+    // fn on_index<I>(self, index: I) -> IndexedModification<I, Self>
+    // where
+    //     Self: Sized,
+    // {
+    //     IndexedModification {
+    //         index,
+    //         modification: self,
+    //     }
+    // }
+    // fn filter<C, M>(self, condition: C, modification: M) -> ThenModification<Self, Filter<C, M>>
+    // where
+    //     C: FnOnce(&T) -> bool,
+    //     M: Modification<T>,
+    //     Self: Sized,
+    // {
+    //     self.then(Filter {
+    //         condition,
+    //         modification,
+    //     })
+    // }
+    // fn map<F, M, U>(self, map: F, modification: M) -> ThenModification<Self, Map<F, M>>
+    // where
+    //     F: FnOnce(&mut T) -> &mut U,
+    //     M: Modification<U>,
+    //     U: ?Sized,
+    //     Self: Sized,
+    // {
+    //     self.then(Map::new(map, modification))
+    // }
+    // fn filter_map<C, M, U>(
+    //     self,
+    //     filter_map: C,
+    //     modification: M,
+    // ) -> ThenModification<Self, FilterMap<C, M>>
+    // where
+    //     C: FnOnce(&mut T) -> Option<&mut U>,
+    //     M: Modification<U>,
+    //     U: ?Sized,
+    //     Self: Sized,
+    // {
+    //     self.then(FilterMap::new(filter_map, modification))
+    // }
     fn into_dyn(self) -> DynModification<T>
     where
         Self: Sized + 'static,

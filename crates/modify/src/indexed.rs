@@ -2,13 +2,13 @@ use std::ops::IndexMut;
 
 use crate::{Modification, ModificationLayer};
 
-pub struct Indexed<I>(pub I);
+pub struct Index<I>(pub I);
 
-impl<I, M> ModificationLayer<M> for Indexed<I> {
-    type Modification = IndexedModification<I, M>;
+impl<I, M> ModificationLayer<M> for Index<I> {
+    type Modification = IndexModification<I, M>;
 
     fn layer(self, inner: M) -> Self::Modification {
-        IndexedModification {
+        IndexModification {
             index: self.0,
             modification: inner,
         }
@@ -16,21 +16,21 @@ impl<I, M> ModificationLayer<M> for Indexed<I> {
 }
 
 #[derive(Debug, Clone)]
-pub struct IndexedModification<I, M> {
+pub struct IndexModification<I, M> {
     pub index: I,
     pub modification: M,
 }
 
-impl<I, M> IndexedModification<I, M> {
+impl<I, M> IndexModification<I, M> {
     pub fn new(index: I, modification: M) -> Self {
-        IndexedModification {
+        IndexModification {
             index,
             modification,
         }
     }
 }
 
-impl<T, I, M> Modification<T> for IndexedModification<I, M>
+impl<T, I, M> Modification<T> for IndexModification<I, M>
 where
     T: IndexMut<I> + ?Sized,
     M: Modification<T::Output>,
@@ -39,4 +39,8 @@ where
         let item = value.index_mut(self.index);
         self.modification.modify(item);
     }
+}
+
+pub fn index<I>(index: I) -> Index<I> {
+    Index(index)
 }

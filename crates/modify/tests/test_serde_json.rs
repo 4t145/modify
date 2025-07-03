@@ -1,15 +1,33 @@
 use std::collections::HashMap;
 
-use modify::{DynModification, Call, Modification, ModificationExt, extend, set};
+use modify::{
+    ApplyFn, ApplySet, Call, DynModification, Extend, Modification, ModificationExt,
+    ModificationLayer, ModificationLayerExt, extend, filter_map, index, map, set,
+};
 use serde_json::Value;
 #[test]
 fn test_extend_array() {
-    let add_hello = extend_array(Some(serde_json::json!("hello")))
-        .on_index("items")
-        .into_dyn();
+    let add_hello = index("items").apply(extend_array(Some(serde_json::json!("hello"))));
     let mut object = serde_json::json!({});
     add_hello.modify(&mut object);
     assert!(object["items"].as_array().unwrap().len() == 1);
+}
+
+#[test]
+fn test_many_index() {
+    let set_name = index("items")
+        .then(index(1))
+        .then(index("value"))
+        .set(serde_json::json!("bob"));
+
+    let mut object = serde_json::json!({
+        "items": [
+            {"value": "hello"},
+            {"value": "world"}
+        ]
+    });
+    set_name.modify(&mut object);
+    assert!(object["items"][1]["value"].as_str() == Some("bob"));
 }
 
 #[test]
@@ -28,22 +46,34 @@ pub fn extend_array<E>(iter: E) -> impl Modification<Value>
 where
     E: IntoIterator<Item = Value>,
 {
-    ().filter(Value::is_null, set(serde_json::json!([])))
-        .filter_map(Value::as_array_mut, extend(iter))
+    fn set_empty_array_if_null(value: &mut Value) -> &mut Value {
+        if value.is_null() {
+            *value = serde_json::json!([]);
+        }
+        value
+    }
+    map(set_empty_array_if_null)
+        .then(filter_map(Value::as_array_mut))
+        .then(Extend)
+        .apply(iter)
 }
 
 pub fn extend_object(object: Value) -> impl Modification<Value> {
-    ().filter(Value::is_null, set(serde_json::json!({})))
-        .filter_map(
-            Value::as_object_mut,
-            Call(|x: &mut serde_json::Map<String, Value>| {
-                if let Value::Object(obj) = object {
-                    for (k, v) in obj {
-                        x.insert(k, v);
-                    }
+    fn set_empty_object_if_null(value: &mut Value) -> &mut Value {
+        if value.is_null() {
+            *value = serde_json::json!({});
+        }
+        value
+    }
+    map(set_empty_object_if_null)
+        .then(filter_map(Value::as_object_mut))
+        .call(|x: &mut serde_json::Map<String, Value>| {
+            if let Value::Object(obj) = object {
+                for (k, v) in obj {
+                    x.insert(k, v);
                 }
-            }),
-        )
+            }
+        })
 }
 
 pub struct JsonValueModify(pub HashMap<String, DynModification<Value>>);
