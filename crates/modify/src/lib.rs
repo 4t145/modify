@@ -18,6 +18,50 @@ pub use conditional::*;
 mod map;
 pub use map::*;
 mod macros;
+
+pub trait ModificationLayer<M> {
+    type Modification;
+    fn layer(self, inner: M) -> Self::Modification;
+}
+
+pub trait ModificationLayerExt<M>: ModificationLayer<M> {
+    fn then<Next>(self, next: Next) -> ThenLayer<Self, Next>
+    where
+        Self: Sized,
+    {
+        ThenLayer {
+            first: self,
+            second: next,
+        }
+    }
+    fn apply(self, modification: M) -> Self::Modification
+    where
+        Self: Sized,
+    {
+        self.layer(modification)
+    }
+}
+pub trait ApplyFn<F>: ModificationLayer<Call<F>> {
+    fn apply_fn(self, function: F) -> Self::Modification
+    where
+        Self: Sized,
+    {
+        self.layer(Call(function))
+    }
+}
+
+pub trait ApplySet<T>: ModificationLayer<Set<T>> {
+    fn apply_set(self, value: T) -> Self::Modification
+    where
+        Self: Sized,
+    {
+        self.layer(Set(value))
+    }
+}
+impl<T, M> ModificationLayerExt<M> for T where T: ModificationLayer<M> {}
+impl<T, F> ApplyFn<F> for T where T: ModificationLayer<Call<F>> {}
+impl<T, V> ApplySet<V> for T where T: ModificationLayer<Set<V>> {}
+
 pub trait Modification<T: ?Sized> {
     fn modify(self, value: &mut T);
 }
@@ -41,22 +85,28 @@ impl<T: ?Sized> Modification<T> for DynModification<T> {
 }
 
 pub trait ModificationExt<T: ?Sized>: Modification<T> {
-    fn then<M2: Modification<T>>(self, then: M2) -> Then<Self, M2>
+    fn layer<L: ModificationLayer<Self>>(self, layer: L) -> L::Modification
     where
         Self: Sized,
     {
-        Then { first: self, then }
+        layer.layer(self)
     }
-    fn on_index<I>(self, index: I) -> Indexed<I, Self>
+    fn then<M2: Modification<T>>(self, then: M2) -> ThenModification<Self, M2>
     where
         Self: Sized,
     {
-        Indexed {
+        self.layer(Then(then))
+    }
+    fn on_index<I>(self, index: I) -> IndexedModification<I, Self>
+    where
+        Self: Sized,
+    {
+        IndexedModification {
             index,
             modification: self,
         }
     }
-    fn filter<C, M>(self, condition: C, modification: M) -> Then<Self, Filter<C, M>>
+    fn filter<C, M>(self, condition: C, modification: M) -> ThenModification<Self, Filter<C, M>>
     where
         C: FnOnce(&T) -> bool,
         M: Modification<T>,
@@ -67,7 +117,7 @@ pub trait ModificationExt<T: ?Sized>: Modification<T> {
             modification,
         })
     }
-    fn map<F, M, U>(self, map: F, modification: M) -> Then<Self, Map<F, M>>
+    fn map<F, M, U>(self, map: F, modification: M) -> ThenModification<Self, Map<F, M>>
     where
         F: FnOnce(&mut T) -> &mut U,
         M: Modification<U>,
@@ -76,7 +126,11 @@ pub trait ModificationExt<T: ?Sized>: Modification<T> {
     {
         self.then(Map::new(map, modification))
     }
-    fn filter_map<C, M, U>(self, filter_map: C, modification: M) -> Then<Self, FilterMap<C, M>>
+    fn filter_map<C, M, U>(
+        self,
+        filter_map: C,
+        modification: M,
+    ) -> ThenModification<Self, FilterMap<C, M>>
     where
         C: FnOnce(&mut T) -> Option<&mut U>,
         M: Modification<U>,
