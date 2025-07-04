@@ -1,4 +1,23 @@
 use crate::{Modification, ModificationLayer};
+
+pub trait Condition<A: ?Sized> {
+    fn check(self, args: &A) -> bool;
+}
+
+impl<F: FnOnce(&A) -> bool, A: ?Sized> Condition<A> for F {
+    fn check(self, args: &A) -> bool {
+        self(args)
+    }
+}
+
+pub struct Not<T>(T);
+
+impl<A: ?Sized, T: Condition<A>> Condition<A> for Not<T> {
+    fn check(self, args: &A) -> bool {
+        !self.0.check(args)
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct Filter<C, M> {
     pub condition: C,
@@ -7,11 +26,11 @@ pub struct Filter<C, M> {
 
 impl<T: ?Sized, C, M> Modification<T> for Filter<C, M>
 where
-    C: FnOnce(&T) -> bool,
+    C: Condition<T>,
     M: Modification<T>,
 {
     fn modify(self, value: &mut T) {
-        if (self.condition)(value) {
+        if self.condition.check(value) {
             self.modification.modify(value);
         }
     }
@@ -77,4 +96,19 @@ impl<C, I> ModificationLayer<I> for FilterMap<C> {
 
 pub fn filter_map<C>(filter_map: C) -> FilterMap<C> {
     FilterMap::new(filter_map)
+}
+
+pub const fn ensure<C, T>(if_not: C, default: T) -> Filter<Not<C>, crate::SetModification<T>>
+where
+    C: FnOnce(&T) -> bool,
+    T: Clone,
+{
+    Filter {
+        condition: Not(if_not),
+        modification: crate::set(default),
+    }
+}
+
+pub const fn not<T>(condition: T) -> Not<T> {
+    Not(condition)
 }

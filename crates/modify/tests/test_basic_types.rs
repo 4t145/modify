@@ -1,6 +1,5 @@
 use modify::{
-    ApplyFn, Call, ExtendModification, Index, IndexModification, Modification, ModificationExt,
-    ModificationLayer, ModificationLayerExt, extend,
+    Modification, ModificationExt, ModificationLayerExt, apply, call, extend, index, set,
 };
 
 pub struct MyState {
@@ -9,8 +8,8 @@ pub struct MyState {
 #[test]
 fn test_vec() {
     let mut data = vec!["value1", "value2"];
-    extend(vec!["value3", "value4"])
-        .and_then(Call(|x: &mut Vec<_>| {
+    apply(extend(vec!["value3", "value4"]))
+        .then_apply(call(|x: &mut Vec<&'static str>| {
             x.pop();
         }))
         .modify(&mut data);
@@ -21,7 +20,7 @@ fn test_vec() {
 fn test_unsized() {
     let mut data = String::from("hello world");
     let x = &mut data[0..5];
-    ().call(str::make_ascii_uppercase).modify(x);
+    call(str::make_ascii_uppercase).modify(x);
     assert_eq!(x, "HELLO");
     assert_eq!(data, "HELLO world");
 }
@@ -29,8 +28,8 @@ fn test_unsized() {
 #[test]
 fn test_indexed() {
     let mut data = String::from("hello world");
-    Index(0..5)
-        .call(str::make_ascii_uppercase)
+    index(0..5)
+        .finally(call(str::make_ascii_uppercase))
         .into_dyn()
         .modify(&mut data);
     assert_eq!(data, "HELLO world");

@@ -1,11 +1,16 @@
-use std::marker::PhantomData;
-
 use crate::{Modification, ModificationLayer};
 
 #[derive(Debug, Clone)]
-pub struct Call<F>(pub F);
+pub struct CallModification<F>(pub F);
 
-impl<F, T: ?Sized> Modification<T> for Call<F>
+pub fn call<F>(f: F) -> CallModification<F> {
+    CallModification(f)
+}
+
+#[derive(Debug, Clone, Copy)]
+pub struct Call;
+
+impl<F, T: ?Sized> Modification<T> for CallModification<F>
 where
     F: FnOnce(&mut T),
 {
@@ -14,21 +19,10 @@ where
     }
 }
 
-// pub struct Call<T: ?Sized>(PhantomData<*const fn() -> fn(&mut T)>);
+impl<F> ModificationLayer<F> for Call {
+    type Modification = CallModification<F>;
 
-// impl<T: ?Sized> Default for Call<T> {
-//     fn default() -> Self {
-//         Call(PhantomData)
-//     }
-// }
-
-// impl<F, T: ?Sized> ModificationLayer<F> for Call<T>
-// where
-//     Closure<F>: Modification<T>,
-// {
-//     type Modification = Closure<F>;
-
-//     fn layer(self, inner: F) -> Self::Modification {
-//         Closure(inner)
-//     }
-// }
+    fn layer(self, inner: F) -> Self::Modification {
+        CallModification(inner)
+    }
+}

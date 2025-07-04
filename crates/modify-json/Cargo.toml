@@ -14,3 +14,4 @@ readme.workspace = true
 modify-core = { path = "../modify" }
 jsonpath-rust = "1.0.3"
 serde_json = { version = "1" }
+serde = { version = "1" }

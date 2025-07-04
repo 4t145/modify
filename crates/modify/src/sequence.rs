@@ -9,6 +9,10 @@ impl<I> Sequence<I> {
     }
 }
 
+pub fn sequence<I>(iter: I) -> Sequence<I> {
+    Sequence(iter)
+}
+
 impl<T: ?Sized, I> Modification<T> for Sequence<I>
 where
     I: Iterator,

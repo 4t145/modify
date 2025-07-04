@@ -21,6 +21,16 @@ where
     }
 }
 
+impl<T: ?Sized, First, Second> Modification<T> for ThenLayer<First, Second>
+where
+    Self: ModificationLayer<()>,
+    <Self as ModificationLayer<()>>::Modification: Modification<T>,
+{
+    fn modify(self, value: &mut T) {
+        self.layer(()).modify(value);
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct Then<M>(pub M);
 
@@ -52,21 +62,21 @@ where
     }
 }
 
-pub struct Step<M> {
+pub struct Apply<M> {
     pub modification: M,
 }
 
-impl<M> Step<M> {
+impl<M> Apply<M> {
     pub fn new(modification: M) -> Self {
-        Step { modification }
+        Apply { modification }
     }
 }
 
-pub fn step<M>(modification: M) -> Step<M> {
-    Step::new(modification)
+pub fn apply<M>(modification: M) -> Apply<M> {
+    Apply::new(modification)
 }
 
-impl<M, I> ModificationLayer<I> for Step<M> {
+impl<M, I> ModificationLayer<I> for Apply<M> {
     type Modification = StepModification<M, I>;
 
     fn layer(self, inner: I) -> Self::Modification {
@@ -74,5 +84,11 @@ impl<M, I> ModificationLayer<I> for Step<M> {
             step: self.modification,
             then: inner,
         }
+    }
+}
+
+impl<T: ?Sized, M: Modification<T>> Modification<T> for Apply<M> {
+    fn modify(self, value: &mut T) {
+        self.modification.modify(value);
     }
 }

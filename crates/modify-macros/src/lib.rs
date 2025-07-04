@@ -1,10 +1,8 @@
-use darling::FromDeriveInput;
 use proc_macro::TokenStream;
-use quote::quote;
 
-mod modification;
+// mod modification;
 
 #[proc_macro_derive(Modification)]
-pub fn derive_modification(input: TokenStream) -> TokenStream {
+pub fn derive_modification(_input: TokenStream) -> TokenStream {
     todo!()
 }
