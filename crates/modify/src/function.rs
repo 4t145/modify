@@ -7,7 +7,7 @@ pub fn call<F>(f: F) -> CallModification<F> {
     CallModification(f)
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Default)]
 pub struct Call;
 
 impl<F, T: ?Sized> Modification<T> for CallModification<F>

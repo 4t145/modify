@@ -17,6 +17,7 @@ pub fn extend<E>(e: E) -> ExtendModification<E> {
     ExtendModification(e)
 }
 
+#[derive(Debug, Clone, Copy, Default)]
 pub struct Extend;
 
 impl<Inner> ModificationLayer<Inner> for Extend {

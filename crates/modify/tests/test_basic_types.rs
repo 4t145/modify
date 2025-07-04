@@ -1,6 +1,4 @@
-use modify::{
-    Modification, ModificationExt, ModificationLayerExt, apply, call, extend, index, set,
-};
+use modify::{Modification, ModificationLayerExt, apply, call, extend, index};
 
 pub struct MyState {
     pub data: Vec<String>,
@@ -29,8 +27,7 @@ fn test_unsized() {
 fn test_indexed() {
     let mut data = String::from("hello world");
     index(0..5)
-        .finally(call(str::make_ascii_uppercase))
-        .into_dyn()
+        .then_apply(call(str::make_ascii_uppercase))
         .modify(&mut data);
     assert_eq!(data, "HELLO world");
 }

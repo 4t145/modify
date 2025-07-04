@@ -35,29 +35,29 @@ where
 pub struct Then<M>(pub M);
 
 impl<A, B> ModificationLayer<A> for Then<B> {
-    type Modification = StepModification<A, B>;
+    type Modification = ApplyModification<A, B>;
 
     fn layer(self, inner: A) -> Self::Modification {
-        StepModification {
-            step: inner,
+        ApplyModification {
+            current: inner,
             then: self.0,
         }
     }
 }
 
 #[derive(Debug, Clone)]
-pub struct StepModification<S, M> {
-    pub step: S,
+pub struct ApplyModification<C, M> {
+    pub current: C,
     pub then: M,
 }
 
-impl<T: ?Sized, A, B> Modification<T> for StepModification<A, B>
+impl<T: ?Sized, C, M> Modification<T> for ApplyModification<C, M>
 where
-    A: Modification<T>,
-    B: Modification<T>,
+    C: Modification<T>,
+    M: Modification<T>,
 {
     fn modify(self, value: &mut T) {
-        self.step.modify(value);
+        self.current.modify(value);
         self.then.modify(value);
     }
 }
@@ -76,12 +76,12 @@ pub fn apply<M>(modification: M) -> Apply<M> {
     Apply::new(modification)
 }
 
-impl<M, I> ModificationLayer<I> for Apply<M> {
-    type Modification = StepModification<M, I>;
+impl<Current, Then> ModificationLayer<Then> for Apply<Current> {
+    type Modification = ApplyModification<Current, Then>;
 
-    fn layer(self, inner: I) -> Self::Modification {
-        StepModification {
-            step: self.modification,
+    fn layer(self, inner: Then) -> Self::Modification {
+        ApplyModification {
+            current: self.modification,
             then: inner,
         }
     }
