@@ -1,7 +1,7 @@
 //! - Modification: Data -> Data
 //! - ModificationLayer: Modification -> Modification
-//! 
-//! 
+//!
+//!
 mod extend;
 pub use extend::*;
 mod function;
@@ -82,6 +82,23 @@ impl<T: ?Sized> Modification<T> for DynModification<T> {
         (self.inner)(value);
     }
 }
+pub struct SendDynModification<T: ?Sized> {
+    pub inner: Box<dyn FnOnce(&mut T) + Send>,
+}
+
+impl<T: ?Sized> SendDynModification<T> {
+    fn new<M: Modification<T> + Send + 'static>(modification: M) -> Self {
+        Self {
+            inner: Box::new(move |value| modification.modify(value)),
+        }
+    }
+}
+
+impl<T: ?Sized> Modification<T> for SendDynModification<T> {
+    fn modify(self, value: &mut T) {
+        (self.inner)(value);
+    }
+}
 
 pub trait ModificationExt<T: ?Sized>: Modification<T> {
     fn layer<L: ModificationLayer<Self>>(self, layer: L) -> L::Modification
@@ -96,6 +113,12 @@ pub trait ModificationExt<T: ?Sized>: Modification<T> {
     {
         DynModification::new(self)
     }
+    fn into_send_dyn(self) -> SendDynModification<T>
+    where
+        Self: Sized + Send + 'static,
+    {
+        SendDynModification::new(self)
+    }
 }
 
 impl<M, T: ?Sized> ModificationExt<T> for M where M: Modification<T> {}
@@ -104,5 +127,12 @@ impl<T: ?Sized + 'static> std::ops::Mul<DynModification<T>> for DynModification<
     type Output = DynModification<T>;
     fn mul(self, rhs: DynModification<T>) -> Self::Output {
         apply(self).then_apply(rhs).into_dyn()
+    }
+}
+
+impl<T: ?Sized + 'static> std::ops::Mul<SendDynModification<T>> for SendDynModification<T> {
+    type Output = SendDynModification<T>;
+    fn mul(self, rhs: SendDynModification<T>) -> Self::Output {
+        apply(self).then_apply(rhs).into_send_dyn()
     }
 }
