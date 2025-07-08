@@ -54,7 +54,7 @@ mod test {
     use modify::{ModificationLayerExt, index, set};
     use serde_json::json;
 
-    use crate::ensure::ensure_number;
+    use crate::ensure::number;
 
     use super::*;
     #[test]
@@ -72,7 +72,7 @@ mod test {
             .then_apply(
                 index("items")
                     .then(index(1))
-                    .then(index("value").then_apply(ensure_number()))
+                    .then(index("value").then_apply(number()))
                     .finally(set(serde_json::json!(20.5)))
                     .modify(&mut json),
             )

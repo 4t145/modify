@@ -23,6 +23,8 @@ mod map;
 pub use map::*;
 
 mod macros;
+#[cfg(feature = "macros")]
+pub use modify_macros::Modification;
 
 pub trait ModificationLayer<M> {
     type Modification;

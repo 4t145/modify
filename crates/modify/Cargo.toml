@@ -13,7 +13,14 @@ readme.workspace = true
 [lib]
 name = "modify"
 
+
+[features]
+default = ["macros"]
+macros = ["dep:modify-macros"]
+
 [dependencies]
+modify-macros = { path = "../modify-macros", optional = true }
+
 
 [dev-dependencies]
 serde_json = { version = "1" }
