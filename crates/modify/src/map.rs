@@ -40,3 +40,19 @@ impl<F, I> ModificationLayer<I> for Map<F> {
         MapModification::new(self.map, inner)
     }
 }
+
+// #[derive(Debug, Clone)]
+// pub struct MapRight<F> {
+//     pub map: F,
+// }
+
+// impl<F, I, I2> ModificationLayer<I> for MapRight<F>
+// where
+//     F: FnOnce(I) -> I2,
+// {
+//     type Modification = I2;
+
+//     fn layer(self, inner: I) -> Self::Modification {
+//         (self.map)(inner)
+//     }
+// }
